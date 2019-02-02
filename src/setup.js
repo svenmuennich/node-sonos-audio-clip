@@ -18,7 +18,7 @@ const clipNames = [
     'zudumm',
 ];
 
-module.exports = async (options) => {
+module.exports = (options) => {
     const { app, eventBus, baseUrl, sonosControl } = options;
     const pathPrefix = options.pathPrefix || '/';
 
@@ -27,10 +27,11 @@ module.exports = async (options) => {
     const staticFilesDir = `${__dirname}/static`;
     app.use(koaMount(staticFilesBasePath, koaStatic(staticFilesDir)));
 
-    const players = await sonosControl.getPlayers();
     console.log(players);
 
-    eventBus.on(eventNames.audioClip.play, (buttonIndex) => {
+    eventBus.on(eventNames.audioClip.play, async (buttonIndex) => {
+        const players = await sonosControl.getPlayers();
+
         console.log(buttonIndex);
         if (buttonIndex - 1 >= clipNames.length) {
             console.log(`Button index ${ buttonIndex} out of range.`)
@@ -40,7 +41,6 @@ module.exports = async (options) => {
         const clipName = clipNames[buttonIndex - 1];
         console.log(`Playing clip ${clipName}...`);
         const audioClipUrl = new URL(`${staticFilesBasePath}/${clipName}.mp3`, baseUrl);
-        // TODO: Play sound on all players
-        sonosControl.playAudioClipOnPlayer(audioClipUrl.toString(), playerId);
+        players.forEach(player => sonosControl.playAudioClipOnPlayer(audioClipUrl.toString(), player.id));
     });
 };
